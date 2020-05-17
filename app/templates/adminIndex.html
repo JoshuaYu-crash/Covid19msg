@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>Hello {{username}}</h1>
+<a href="/admin/getnewdata/{{ username }}">更新数据</a>
+<a href="">用户管理</a>
+<a href="">评论管理</a>
+<a href="/admin/changedata/{{ username }}">数据修正</a>
+<hr>
+{% if message %}
+    <span style="color: red">{{ message }}</span>
+{% endif %}
+</body>
+</html>
