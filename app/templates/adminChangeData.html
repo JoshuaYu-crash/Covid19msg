@@ -8,8 +8,8 @@
 <h1>Hello {{username}}</h1>
 <a href="/admin/getnewdata/{{ username }}">更新数据</a>
 <a href="">用户管理</a>
-<a href="">评论管理</a>
-<a href="">数据修正</a>
+<a href="/admin/commentcontrol/{{ username }}">评论管理</a>
+<a href="/admin/changedata/{{ username }}">数据修正</a>
 <hr>
 {% for foo in filelist %}
     <a href="{{ url_for("admin.adminDataDownload", filename = foo) }}">{{ foo }}</a> <a href="{{ url_for("admin.adminDataUpload", filename=foo, username=username) }}">修改</a><br>

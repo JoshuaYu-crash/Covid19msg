@@ -143,7 +143,7 @@ def getComment():
     comments = Comment.query.all()
     for comment in comments:
         subcmt = []
-        subcomments = subComment.query.get(comment.id)
+        subcomments = subComment.query.filter_by(parentCommentId=comment.id).all()
         for subcomment in subcomments:
             user1 = User.query.get(subcomment.userId)
             temp1 = {
@@ -160,11 +160,11 @@ def getComment():
             'subcomments': subcmt
         }
         cmts.append(temp2)
-        return jsonify(
-            {
-                'comments': cmts
-            }
-        )
+    return jsonify(
+        {
+            'comments': cmts
+        }
+    )
 
 
 

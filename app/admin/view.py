@@ -81,7 +81,7 @@ def adminChangeData(username):
 def adminDataDownload(filename):
     return send_from_directory(UPLOAD_PATH, filename, as_attachment=True)
 
-@admin.route('/dataupload/<username>/<filename>')
+@admin.route('/dataupload/<username>/<filename>', methods=['POST','GET'])
 def adminDataUpload(filename, username):
     adminLoginConfirm(username)
     form = fileUploadForm()
@@ -91,5 +91,30 @@ def adminDataUpload(filename, username):
         os.remove(UPLOAD_PATH + filename)
         file.save(os.path.join(UPLOAD_PATH, filename))
         flash('上传成功')
-    return render_template('fileupload.html', form=form, filename=filename)
+    return render_template('fileupload.html', form=form, filename=filename, username=username)
 
+
+@admin.route('/commentcontrol/<username>', methods=['GET'])
+def commentControl(username):
+    cmts = []
+    comments = Comment.query.all()
+    for comment in comments:
+        subcmt = []
+        subcomments = subComment.query.filter_by(parentCommentId=comment.id).all()
+        for subcomment in subcomments:
+            user1 = User.query.get(subcomment.userId)
+            temp1 = {
+                'username': user1.id,
+                'text': subcomment.text,
+                'uploadtime': subcomment.uploadTime
+            }
+            subcmt.append(temp1)
+        user2 = User.query.get(comment.userId)
+        temp2 = {
+            'username': user2.id,
+            'text': comment.text,
+            'uploadtime': comment.uploadTime,
+            'subcomments': subcmt
+        }
+        cmts.append(temp2)
+    return render_template("adminCommentControl.html", cmts = cmts, username=username)
