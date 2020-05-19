@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 from app.setting import SECRET_KEY
 import requests
+import json
 
 # 生成token 入参：用户id
 def generate_token(key, expire=86400):
@@ -46,7 +47,16 @@ def getMsg():
     }
     html = requests.get(url, headers=headers)
 
-    msg = html.text
+    msg = json.loads(html.text)
+
+    contries = msg['data']['areaTree']
+    sum = 0
+    for contry in contries:
+        sum += contry['total']['confirm']
+    msg['data']['worldTotal'] = sum
+
+    msg = json.dumps(msg)
+
     UPLOAD_PATH = os.path.join(os.path.dirname((__file__)), 'CovidMessage/')
     if not os.path.exists(UPLOAD_PATH):
         os.makedirs(UPLOAD_PATH)

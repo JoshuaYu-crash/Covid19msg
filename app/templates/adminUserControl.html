@@ -10,15 +10,15 @@
 <a href="/admin/usercontrol/{{ username }}">用户管理</a>
 <a href="/admin/commentcontrol/{{ username }}">评论管理</a>
 <a href="/admin/changedata/{{ username }}">数据修正</a>
+
 <hr>
-<a href="/admin/changedata/{{ username }}">{{ filename }}</a><br>
-<form method="POST" enctype="multipart/form-data">
-    {{ form.csrf_token() }}
-    {{ form.file.label }}{{ form.file }}<br>
-    {{ form.submit }}<br>
-</form>
-{% for message in get_flashed_messages() %}
-    <small style="color: red">{{ message }}</small>
-{% endfor %}<br>
+
+<ul>
+    {% for user in users %}
+        <li>{{ user.id }} | {{ user.username }} | <a href="/admin/userdelete/{{ username }}/{{ user.id }}">封号</a></li>
+    {% endfor %}
+
+</ul>
+
 </body>
 </html>

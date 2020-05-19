@@ -147,15 +147,19 @@ def getComment():
         for subcomment in subcomments:
             user1 = User.query.get(subcomment.userId)
             temp1 = {
-                'username': user1.id,
+                'userid': user1.id,
+                'username': user1.username,
                 'text': subcomment.text,
+                'textid': subcomment.id,
                 'uploadtime': subcomment.uploadTime
             }
             subcmt.append(temp1)
         user2 = User.query.get(comment.userId)
         temp2 = {
-            'username': user2.id,
+            'userid': user2.id,
+            'username': user2.username,
             'text': comment.text,
+            'textid': comment.id,
             'uploadtime': comment.uploadTime,
             'subcomments': subcmt
         }

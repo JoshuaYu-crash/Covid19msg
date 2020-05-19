@@ -96,6 +96,7 @@ def adminDataUpload(filename, username):
 
 @admin.route('/commentcontrol/<username>', methods=['GET'])
 def commentControl(username):
+    adminLoginConfirm(username)
     cmts = []
     comments = Comment.query.all()
     for comment in comments:
@@ -104,17 +105,64 @@ def commentControl(username):
         for subcomment in subcomments:
             user1 = User.query.get(subcomment.userId)
             temp1 = {
-                'username': user1.id,
+                'userid': user1.id,
+                'username': user1.username,
                 'text': subcomment.text,
+                'textid': subcomment.id,
                 'uploadtime': subcomment.uploadTime
             }
             subcmt.append(temp1)
         user2 = User.query.get(comment.userId)
         temp2 = {
-            'username': user2.id,
+            'userid': user2.id,
+            'username': user2.username,
             'text': comment.text,
+            'textid': comment.id,
             'uploadtime': comment.uploadTime,
             'subcomments': subcmt
         }
         cmts.append(temp2)
     return render_template("adminCommentControl.html", cmts = cmts, username=username)
+
+
+@admin.route('/commentdelete/<username>/<int:id>', methods=['GET'])
+def commentDelete(username, id):
+    adminLoginConfirm(username)
+    comment = Comment.query.get(id)
+
+    subComment.query.filter_by(parentCommentId=comment.id).delete()
+    db.session.delete(comment)
+    db.session.commit()
+
+    return redirect(url_for('admin.commentControl', username=username))
+
+
+@admin.route('/subcommentdelete/<username>/<int:id>', methods=['GET'])
+def subCommentDelete(username, id):
+    adminLoginConfirm(username)
+
+    subcomment = subComment.query.get(id)
+    db.session.delete(subcomment)
+    db.session.commit()
+
+    return redirect(url_for('admin.commentControl', username=username))
+
+@admin.route('/usercontrol/<username>')
+def userControl(username):
+    adminLoginConfirm(username)
+    users = User.query.all()
+    return render_template("adminUserControl.html", username=username, users=users)
+
+
+@admin.route('/userdelete/<username>/<int:id>')
+def userDelete(username, id):
+    adminLoginConfirm(username)
+
+    user = User.query.get(id)
+    subComment.query.filter_by(userId=user.id).delete()
+    Comment.query.filter_by(userId=user.id).delete()
+
+    db.session.delete(user)
+    db.session.commit()
+
+    return redirect(url_for("admin.userControl", username=username))
