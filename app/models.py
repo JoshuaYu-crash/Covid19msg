@@ -11,6 +11,7 @@ class User(db.Model):
     avatar = db.Column(db.String(128))
     Comments = db.relationship('Comment', backref='user')
     subComments = db.relationship('subComment', backref='user')
+    stars = db.relationship('userStar', backref='user')
 
 
 
@@ -30,6 +31,7 @@ class Comment(db.Model):
     text = db.Column(db.Text)
     subComments = db.relationship('subComment', backref='comment')
     uploadTime = db.Column(db.DateTime, default=datetime.now())
+    star = db.Column(db.Integer, default=0)
 
 
 
@@ -40,6 +42,7 @@ class subComment(db.Model):
     parentCommentId = db.Column(db.Integer, db.ForeignKey('comment.id'))
     text = db.Column(db.Text)
     uploadTime = db.Column(db.DateTime, default=datetime.now())
+    star = db.Column(db.Integer, default=0)
 
 
 
@@ -56,3 +59,12 @@ class Admin(db.Model):
 
     def checkPassword(self, password):
         return check_password_hash(self.password, password)
+
+
+class userStar(db.Model):
+    __tablename__ = 'userstar'
+    id = db.Column(db.Integer, primary_key=True)
+    userId = db.Column(db.Integer, db.ForeignKey('user.id'))
+    commentType = db.Column(db.Integer)
+    commentId = db.Column(db.Integer)
+    subCommentId = db.Column(db.Integer)

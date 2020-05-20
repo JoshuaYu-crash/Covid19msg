@@ -2,6 +2,7 @@ from app.api import api
 from flask import request, jsonify
 from app.models import *
 from app.utlis import generate_token, certify_token
+from app.setting import UPLOAD_PATH
 
 
 # 注册
@@ -49,6 +50,7 @@ def userLogin():
         return jsonify(
             {
                 'username': username,
+                'userid': user.id,
                 'token': token
             }
         )
@@ -150,8 +152,9 @@ def getComment():
                 'userid': user1.id,
                 'username': user1.username,
                 'text': subcomment.text,
-                'textid': subcomment.id,
-                'uploadtime': subcomment.uploadTime
+                'subcommentid': subcomment.id,
+                'uploadtime': subcomment.uploadTime,
+                'star':subcomment.star
             }
             subcmt.append(temp1)
         user2 = User.query.get(comment.userId)
@@ -159,8 +162,9 @@ def getComment():
             'userid': user2.id,
             'username': user2.username,
             'text': comment.text,
-            'textid': comment.id,
+            'commentid': comment.id,
             'uploadtime': comment.uploadTime,
+            'star':comment.star,
             'subcomments': subcmt
         }
         cmts.append(temp2)
@@ -172,5 +176,190 @@ def getComment():
 
 
 
-# 删除评论
+# 删除父评论
+@api.route('/deletecomment', methods=['POST'])
+def deleteComment():
+    # 验证token
+    token = request.json.get('token')
+    user = User.query.filter_by(token=token).first()
+    if user is None or certify_token(user.username, token):
+        # token无效
+        pass
 
+    commentId = request.json.get('commentid')
+
+    comment = Comment.query.get(commentId)
+
+    if comment.userId != user.id:
+        # 没有权限
+        pass
+    subComment.query.filter_by(parentCommentId=comment.id).delete()
+    db.session.delete(comment)
+
+    # 生成新token
+    token = generate_token(user.username)
+    user.token = token
+
+    db.session.commit()
+
+    return jsonify(
+        {
+            'status': 0,
+            'token': token
+        }
+    )
+
+
+# 删除子评论
+@api.route('/deletesubcomment', methods=['POST'])
+def deleteSubComment():
+    # 验证token
+    token = request.json.get('token')
+    user = User.query.filter_by(token=token).first()
+    if user is None or certify_token(user.username, token):
+        # token无效
+        pass
+
+    subCommentId = request.json.get('subcommentid')
+
+    subcomment = subComment.query.get(subCommentId)
+    db.session.delete(subcomment)
+
+    # 生成新token
+    token = generate_token(user.username)
+    user.token = token
+
+    db.session.commit()
+
+    return jsonify(
+        {
+            'status': 0,
+            'token': token
+        }
+    )
+
+
+
+
+
+
+# 获取数据
+@api.route('/getmsg', methods=['POST', 'GET'])
+def getMsg():
+    if request.method == 'POST':
+        year = request.json.get('year')
+        month = request.json.get('month')
+        day = request.json.get('day')
+        if year is not None and month is not None and day is not None:
+            if month < 10:
+                month = '0' + str(month)
+            filename = UPLOAD_PATH + str(year) + '_' + month + '_' + str(day) + '.json'
+            with open(filename, 'r', encoding='gbk') as f:
+                msg = f.read()
+        else:
+            filename = UPLOAD_PATH + datetime.now().strftime('%Y_%m_%d') + '.json'
+            with open(filename, 'r', encoding='gbk') as f:
+                msg = f.read()
+    else:
+        filename = UPLOAD_PATH + datetime.now().strftime('%Y_%m_%d') + '.json'
+        with open(filename, 'r', encoding='gbk') as f:
+            msg = f.read()
+
+    return msg
+
+# 父评论点赞
+@api.route('/starcomment', methods=['POST'])
+def starComment():
+    # 验证token
+    token = request.json.get('token')
+    user = User.query.filter_by(token=token).first()
+    if user is None or certify_token(user.username, token):
+        # token无效
+        pass
+
+    commentId = request.json.get('commentid')
+    comment = Comment.query.get(commentId)
+    if comment is None:
+        # 没有该评论
+        pass
+
+    userstars = userStar.query.filter_by(userId=user.id).all()
+    check = 0
+    for userstar in userstars:
+        if userstar.commentId == comment.id:
+            check = 1
+            break
+    if check:
+        # 已经点赞了
+        return "250"
+
+    comment.star += 1
+    userstar = userStar(
+        userId=user.id,
+        commentType=0,
+        commentId=comment.id
+    )
+    db.session.add(userstar)
+
+    # 生成新token
+    token = generate_token(user.username)
+    user.token = token
+
+    db.session.commit()
+
+    return jsonify(
+        {
+            'status': 0,
+            'token': token
+        }
+    )
+
+
+
+
+# 子评论点赞
+@api.route('/starsubcomment', methods=['POST'])
+def starSubComment():
+    # 验证token
+    token = request.json.get('token')
+    user = User.query.filter_by(token=token).first()
+    if user is None or certify_token(user.username, token):
+        # token无效
+        pass
+
+    subCommentId = request.json.get('subcommentid')
+    subcomment = Comment.query.get(subCommentId)
+    if subcomment is None:
+        # 没有该评论
+        pass
+
+    userstars = userStar.query.filter_by(userId=user.id).all()
+    check = 0
+    for userstar in userstars:
+        if userstar.subCommentId == subcomment.id:
+            check = 1
+            break
+    if check:
+        # 已经点赞了
+        pass
+
+    subcomment.star += 1
+    userstar = userStar(
+        userId=user.id,
+        commentType=1,
+        subCommentId=subcomment.id
+    )
+    db.session.add(userstar)
+
+    # 生成新token
+    token = generate_token(user.username)
+    user.token = token
+
+    db.session.commit()
+
+    return jsonify(
+        {
+            'status': 0,
+            'token':token
+        }
+    )
