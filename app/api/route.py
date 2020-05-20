@@ -3,6 +3,7 @@ from flask import request, jsonify
 from app.models import *
 from app.utlis import generate_token, certify_token
 from app.setting import UPLOAD_PATH
+from app.api.error import *
 
 
 # 注册
@@ -12,10 +13,10 @@ def userRegister():
     password = request.json.get('password')
     if username is None or password is None:
         # 信息不完整
-        pass
+        dataIncomplete()
     if User.query.filter_by(username=username).count() != 0:
         # 用户名存在
-        pass
+        duplicateData()
     token = generate_token(username)
     user = User(
         username=username,
@@ -26,8 +27,11 @@ def userRegister():
     db.session.add(user)
     db.session.commit()
     return jsonify({
-        'username': username,
-        'token':token
+        'status':0,
+        'data': {
+            'username': username,
+            'token': token
+        }
     })
 
 
@@ -38,10 +42,10 @@ def userLogin():
     password = request.json.get('password')
     if username is None or password is None:
         # 信息不完整
-        print(1)
+        dataIncomplete()
     if User.query.filter_by(username=username).count() == 0:
         # 账号不存在
-        print(2)
+        noneObject("账号不存在")
     user = User.query.filter_by(username=username).first()
     if user.checkPassword(password):
         token = generate_token(username)
@@ -49,14 +53,17 @@ def userLogin():
         db.session.commit()
         return jsonify(
             {
-                'username': username,
-                'userid': user.id,
-                'token': token
+                'status': 0,
+                'data': {
+                    'username': username,
+                    'userid': user.id,
+                    'token': token
+                }
             }
         )
     else:
         # 密码错误
-        pass
+        invalidToken("密码错误")
 
 
 # 发评论
@@ -67,12 +74,12 @@ def makeComment():
     user = User.query.filter_by(token=token).first()
     if user is None or certify_token(user.username, token):
         # token无效
-        pass
+        invalidToken()
 
     text = request.json.get('text')
     if text is None:
         # 重要参数不能为空
-        pass
+        dataIncomplete()
 
     # 提交评论
     comment = Comment(
@@ -89,11 +96,15 @@ def makeComment():
 
     return jsonify(
         {
-            'id': comment.id,
-            'username': user.username,
-            'token': token,
-            'text': text,
-            'uploadTime': comment.uploadTime
+            'status': 0,
+            'data': {
+                'id': comment.id,
+                'username': user.username,
+                'token': token,
+                'text': text,
+                'uploadTime': comment.uploadTime
+            }
+
         }
     )
 
@@ -108,13 +119,17 @@ def makeSubComment():
     user = User.query.filter_by(token=token).first()
     if user is None or certify_token(user.username, token):
         # token无效
-        pass
+        invalidToken()
 
     text = request.json.get('text')
     parentId = request.json.get('parentid')
     if text is None or parentId is None:
         # 重要参数不能为空
-        pass
+        dataIncomplete()
+
+    if Comment.query.get(parentId) is None:
+        # 评论不存在
+        noneObject()
     subcmt = subComment(
         text=text,
         userId=user.id,
@@ -129,11 +144,15 @@ def makeSubComment():
     db.session.commit()
     return jsonify(
         {
-            'id': subcmt.id,
-            'username': user.username,
-            'token': token,
-            'text': text,
-            'uploadTime': subcmt.uploadTime
+            'status': 0,
+            'data': {
+                'id': subcmt.id,
+                'username': user.username,
+                'token': token,
+                'text': text,
+                'uploadTime': subcmt.uploadTime
+            }
+
         }
     )
 
@@ -170,7 +189,11 @@ def getComment():
         cmts.append(temp2)
     return jsonify(
         {
-            'comments': cmts
+            'status': 0,
+            'data': {
+                'comments': cmts
+            }
+
         }
     )
 
@@ -184,7 +207,7 @@ def deleteComment():
     user = User.query.filter_by(token=token).first()
     if user is None or certify_token(user.username, token):
         # token无效
-        pass
+        invalidToken()
 
     commentId = request.json.get('commentid')
 
@@ -192,7 +215,7 @@ def deleteComment():
 
     if comment.userId != user.id:
         # 没有权限
-        pass
+        permissionDenied()
     subComment.query.filter_by(parentCommentId=comment.id).delete()
     db.session.delete(comment)
 
@@ -204,8 +227,10 @@ def deleteComment():
 
     return jsonify(
         {
-            'status': 0,
-            'token': token
+            'status':0,
+            'data': {
+                'token': token
+            }
         }
     )
 
@@ -218,7 +243,7 @@ def deleteSubComment():
     user = User.query.filter_by(token=token).first()
     if user is None or certify_token(user.username, token):
         # token无效
-        pass
+        invalidToken()
 
     subCommentId = request.json.get('subcommentid')
 
@@ -233,8 +258,10 @@ def deleteSubComment():
 
     return jsonify(
         {
-            'status': 0,
-            'token': token
+            'status':0,
+            'data': {
+                'token': token
+            }
         }
     )
 
@@ -275,13 +302,13 @@ def starComment():
     user = User.query.filter_by(token=token).first()
     if user is None or certify_token(user.username, token):
         # token无效
-        pass
+        invalidToken()
 
     commentId = request.json.get('commentid')
     comment = Comment.query.get(commentId)
     if comment is None:
         # 没有该评论
-        pass
+        noneObject()
 
     userstars = userStar.query.filter_by(userId=user.id).all()
     check = 0
@@ -309,8 +336,10 @@ def starComment():
 
     return jsonify(
         {
-            'status': 0,
-            'token': token
+            'status':0,
+            'data': {
+                'token': token
+            }
         }
     )
 
@@ -325,13 +354,13 @@ def starSubComment():
     user = User.query.filter_by(token=token).first()
     if user is None or certify_token(user.username, token):
         # token无效
-        pass
+        invalidToken()
 
     subCommentId = request.json.get('subcommentid')
     subcomment = Comment.query.get(subCommentId)
     if subcomment is None:
         # 没有该评论
-        pass
+        noneObject()
 
     userstars = userStar.query.filter_by(userId=user.id).all()
     check = 0
@@ -341,7 +370,7 @@ def starSubComment():
             break
     if check:
         # 已经点赞了
-        pass
+        permissionDenied("不能重复点赞")
 
     subcomment.star += 1
     userstar = userStar(
@@ -359,7 +388,9 @@ def starSubComment():
 
     return jsonify(
         {
-            'status': 0,
-            'token':token
+            'status':0,
+            'data': {
+                'token': token
+            }
         }
     )
