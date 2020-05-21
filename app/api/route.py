@@ -318,7 +318,7 @@ def starComment():
             break
     if check:
         # 已经点赞了
-        return "250"
+        permissionDenied()
 
     comment.star += 1
     userstar = userStar(
