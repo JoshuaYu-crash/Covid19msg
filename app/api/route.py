@@ -308,7 +308,7 @@ def starComment():
     comment = Comment.query.get(commentId)
     if comment is None:
         # 没有该评论
-        noneObject()
+        return noneObject()
 
     userstars = userStar.query.filter_by(userId=user.id).all()
     check = 0

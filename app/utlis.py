@@ -6,6 +6,16 @@ from datetime import datetime
 from app.setting import SECRET_KEY
 import requests
 import json
+import functools
+
+def cmp(a, b):
+    if a['total']['confirm'] - a['total']['heal'] - a['total']['dead'] > b['total']['confirm'] - b['total']['heal'] - b['total']['dead']:
+        return 1
+    elif a['total']['confirm'] - a['total']['heal'] - a['total']['dead'] < b['total']['confirm'] - b['total']['heal'] - b['total']['dead']:
+        return -1
+    else:
+        return 0
+
 
 # 生成token 入参：用户id
 def generate_token(key, expire=86400):
@@ -50,11 +60,22 @@ def getMsg():
     msg = json.loads(html.text)
 
     contries = msg['data']['areaTree']
-    sum = 0
+    sumTotal = 0
+    sumHeal = 0
+    sumDead = 0
     for contry in contries:
-        sum += contry['total']['confirm']
-    msg['data']['worldTotal'] = sum
-
+        sumTotal += contry['total']['confirm']
+        sumHeal += contry['total']['heal']
+        sumDead += contry['total']['dead']
+    tempdict = {
+        'total': sumTotal,
+        'nowconfirm': sumTotal - sumHeal - sumDead,
+        'dead': sumDead,
+        'heal': sumHeal
+    }
+    msg['data']['worldTotal'] = tempdict
+    contries = sorted(contries, key=functools.cmp_to_key(cmp), reverse=True)
+    msg['data']['areaTree'] = contries
     msg = json.dumps(msg)
 
     UPLOAD_PATH = os.path.join(os.path.dirname((__file__)), 'CovidMessage/')
