@@ -1,7 +1,7 @@
 from app.api import api
 from flask import request, jsonify
 from app.models import *
-from app.utlis import generate_token, certify_token
+from app.utlis import generate_token, certify_token, getMsg
 from app.setting import UPLOAD_PATH
 from app.api.error import *
 
@@ -13,10 +13,10 @@ def userRegister():
     password = request.json.get('password')
     if username is None or password is None:
         # 信息不完整
-        dataIncomplete()
+        return dataIncomplete()
     if User.query.filter_by(username=username).count() != 0:
         # 用户名存在
-        duplicateData()
+        return duplicateData()
     token = generate_token(username)
     user = User(
         username=username,
@@ -42,10 +42,10 @@ def userLogin():
     password = request.json.get('password')
     if username is None or password is None:
         # 信息不完整
-        dataIncomplete()
+        return dataIncomplete()
     if User.query.filter_by(username=username).count() == 0:
         # 账号不存在
-        noneObject("账号不存在")
+        return noneObject("账号不存在")
     user = User.query.filter_by(username=username).first()
     if user.checkPassword(password):
         token = generate_token(username)
@@ -74,12 +74,12 @@ def makeComment():
     user = User.query.filter_by(token=token).first()
     if user is None or certify_token(user.username, token):
         # token无效
-        invalidToken()
+        return invalidToken()
 
     text = request.json.get('text')
     if text is None:
         # 重要参数不能为空
-        dataIncomplete()
+        return dataIncomplete()
 
     # 提交评论
     comment = Comment(
@@ -119,13 +119,13 @@ def makeSubComment():
     user = User.query.filter_by(token=token).first()
     if user is None or certify_token(user.username, token):
         # token无效
-        invalidToken()
+        return invalidToken()
 
     text = request.json.get('text')
     parentId = request.json.get('parentid')
     if text is None or parentId is None:
         # 重要参数不能为空
-        dataIncomplete()
+        return dataIncomplete()
 
     if Comment.query.get(parentId) is None:
         # 评论不存在
@@ -207,7 +207,7 @@ def deleteComment():
     user = User.query.filter_by(token=token).first()
     if user is None or certify_token(user.username, token):
         # token无效
-        invalidToken()
+        return invalidToken()
 
     commentId = request.json.get('commentid')
 
@@ -215,7 +215,7 @@ def deleteComment():
 
     if comment.userId != user.id:
         # 没有权限
-        permissionDenied()
+        return permissionDenied()
     subComment.query.filter_by(parentCommentId=comment.id).delete()
     db.session.delete(comment)
 
@@ -243,7 +243,7 @@ def deleteSubComment():
     user = User.query.filter_by(token=token).first()
     if user is None or certify_token(user.username, token):
         # token无效
-        invalidToken()
+        return invalidToken()
 
     subCommentId = request.json.get('subcommentid')
 
@@ -288,10 +288,15 @@ def getMsg():
             with open(filename, 'r', encoding='gbk') as f:
                 msg = f.read()
     else:
-        filename = UPLOAD_PATH + datetime.now().strftime('%Y_%m_%d') + '.json'
-        with open(filename, 'r', encoding='gbk') as f:
-            msg = f.read()
-
+        try:
+            filename = UPLOAD_PATH + datetime.now().strftime('%Y_%m_%d') + '.json'
+            with open(filename, 'r', encoding='gbk') as f:
+                msg = f.read()
+        except:
+            getMsg()
+            filename = UPLOAD_PATH + datetime.now().strftime('%Y_%m_%d') + '.json'
+            with open(filename, 'r', encoding='gbk') as f:
+                msg = f.read()
     return msg
 
 # 父评论点赞
@@ -302,7 +307,7 @@ def starComment():
     user = User.query.filter_by(token=token).first()
     if user is None or certify_token(user.username, token):
         # token无效
-        invalidToken()
+        return invalidToken()
 
     commentId = request.json.get('commentid')
     comment = Comment.query.get(commentId)
@@ -354,13 +359,13 @@ def starSubComment():
     user = User.query.filter_by(token=token).first()
     if user is None or certify_token(user.username, token):
         # token无效
-        invalidToken()
+        return invalidToken()
 
     subCommentId = request.json.get('subcommentid')
     subcomment = Comment.query.get(subCommentId)
     if subcomment is None:
         # 没有该评论
-        noneObject()
+        return noneObject()
 
     userstars = userStar.query.filter_by(userId=user.id).all()
     check = 0
