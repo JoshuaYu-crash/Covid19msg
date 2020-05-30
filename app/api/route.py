@@ -72,7 +72,8 @@ def makeComment():
     # 验证token
     token = request.json.get('token')
     user = User.query.filter_by(token=token).first()
-    if user is None or certify_token(user.username, token):
+    print(token, user.username)
+    if user is None or certify_token(user.username, token) is False:
         # token无效
         return invalidToken()
 
