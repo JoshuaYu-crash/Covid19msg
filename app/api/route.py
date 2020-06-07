@@ -85,7 +85,8 @@ def makeComment():
     # 提交评论
     comment = Comment(
         text=text,
-        userId=user.id
+        userId=user.id,
+        uploadTime=datetime.now()
     )
     db.session.add(comment)
 
@@ -118,7 +119,7 @@ def makeSubComment():
     # 验证token
     token = request.json.get('token')
     user = User.query.filter_by(token=token).first()
-    if user is None or certify_token(user.username, token):
+    if user is None or certify_token(user.username, token) is False:
         # token无效
         return invalidToken()
 
@@ -134,6 +135,7 @@ def makeSubComment():
     subcmt = subComment(
         text=text,
         userId=user.id,
+        uploadTime=datetime.now(),
         parentCommentId=parentId
     )
     db.session.add(subcmt)
@@ -206,7 +208,7 @@ def deleteComment():
     # 验证token
     token = request.json.get('token')
     user = User.query.filter_by(token=token).first()
-    if user is None or certify_token(user.username, token):
+    if user is None or certify_token(user.username, token) is False:
         # token无效
         return invalidToken()
 
@@ -242,7 +244,7 @@ def deleteSubComment():
     # 验证token
     token = request.json.get('token')
     user = User.query.filter_by(token=token).first()
-    if user is None or certify_token(user.username, token):
+    if user is None or certify_token(user.username, token) is False:
         # token无效
         return invalidToken()
 
@@ -306,7 +308,7 @@ def starComment():
     # 验证token
     token = request.json.get('token')
     user = User.query.filter_by(token=token).first()
-    if user is None or certify_token(user.username, token):
+    if user is None or certify_token(user.username, token) is False:
         # token无效
         return invalidToken()
 
@@ -358,7 +360,7 @@ def starSubComment():
     # 验证token
     token = request.json.get('token')
     user = User.query.filter_by(token=token).first()
-    if user is None or certify_token(user.username, token):
+    if user is None or certify_token(user.username, token) is False:
         # token无效
         return invalidToken()
 

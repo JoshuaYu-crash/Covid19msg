@@ -30,7 +30,7 @@ class Comment(db.Model):
     userId = db.Column(db.Integer, db.ForeignKey('user.id'))
     text = db.Column(db.Text)
     subComments = db.relationship('subComment', backref='comment')
-    uploadTime = db.Column(db.DateTime, default=datetime.now())
+    uploadTime = db.Column(db.DateTime)
     star = db.Column(db.Integer, default=0)
 
 
@@ -41,7 +41,7 @@ class subComment(db.Model):
     userId = db.Column(db.Integer, db.ForeignKey('user.id'))
     parentCommentId = db.Column(db.Integer, db.ForeignKey('comment.id'))
     text = db.Column(db.Text)
-    uploadTime = db.Column(db.DateTime, default=datetime.now())
+    uploadTime = db.Column(db.DateTime)
     star = db.Column(db.Integer, default=0)
 
 
